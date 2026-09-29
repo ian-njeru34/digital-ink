@@ -1,0 +1,56 @@
+export default async function handler(request) {
+  if (request.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      {
+        status: 405,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const message = body.message;
+
+    if (!message || typeof message !== "string") {
+      return new Response(
+        JSON.stringify({ error: "A message is required." }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        reply:
+          "Digital Ink AI Assistant is connected. Your message was received: " +
+          message
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: "Unable to process the request."
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  }
+}
