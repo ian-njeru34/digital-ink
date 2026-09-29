@@ -133,11 +133,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
+  /*
+    Conversation memory.
+
+    This stores only the current assistant conversation
+    in the visitor's browser while the chat is open.
+
+    It does NOT contain any API keys.
+  */
+
+  let assistantHistory = [];
+
+
   function openAssistant() {
 
     if (document.querySelector('#digitalInkAssistant')) {
       return;
     }
+
+    /*
+      Start a fresh conversation every time
+      the assistant window is opened.
+    */
+
+    assistantHistory = [];
 
     const assistant = document.createElement('div');
 
@@ -226,14 +245,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeButton.addEventListener(
       'click',
-      () => assistant.remove()
+      () => {
+        assistant.remove();
+        assistantHistory = [];
+      }
     );
 
 
-    const form =
+    const assistantForm =
       assistant.querySelector('#diAssistantForm');
 
-    form.addEventListener(
+    assistantForm.addEventListener(
       'submit',
       sendAssistantMessage
     );
@@ -246,6 +268,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   }
 
+
+  /* =========================
+     SEND AI ASSISTANT MESSAGE
+  ========================= */
 
   async function sendAssistantMessage(event) {
 
@@ -267,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    /* Add visitor message */
+    /* Add visitor message to the screen */
 
     const userMessage =
       document.createElement('div');
@@ -279,6 +305,17 @@ document.addEventListener('DOMContentLoaded', () => {
       message;
 
     messages.appendChild(userMessage);
+
+
+    /*
+      Save visitor message to conversation history
+      BEFORE sending it to the server.
+    */
+
+    assistantHistory.push({
+      role: 'user',
+      content: message
+    });
 
 
     input.value = '';
@@ -306,6 +343,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
 
+      /*
+        Send both:
+        1. The latest visitor message
+        2. Recent conversation history
+      */
+
       const response =
         await fetch('/api/ai-assistant', {
 
@@ -316,7 +359,8 @@ document.addEventListener('DOMContentLoaded', () => {
           },
 
           body: JSON.stringify({
-            message: message
+            message: message,
+            history: assistantHistory
           })
 
         });
@@ -339,6 +383,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
 
+      const reply =
+        data.reply ||
+        'I am sorry, I could not generate a response.';
+
+
+      /*
+        Save the AI response to conversation history.
+      */
+
+      assistantHistory.push({
+        role: 'assistant',
+        content: reply
+      });
+
+
       const aiMessage =
         document.createElement('div');
 
@@ -348,11 +407,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
       aiMessage.innerHTML = `
         <strong>Digital Ink AI</strong>
-        <p>${escapeHtml(data.reply || '')}</p>
+        <p>${escapeHtml(reply)}</p>
       `;
 
 
       messages.appendChild(aiMessage);
+
+
+      /*
+        If the server successfully saved a lead,
+        show a subtle confirmation.
+      */
+
+      if (data.leadSaved === true) {
+
+        const savedMessage =
+          document.createElement('div');
+
+        savedMessage.className =
+          'di-message di-message-ai';
+
+        savedMessage.innerHTML = `
+          <strong>Digital Ink AI</strong>
+          <p>
+            Your enquiry has been recorded.
+            Our team can follow up with you directly.
+          </p>
+        `;
+
+        messages.appendChild(savedMessage);
+
+      }
 
 
     } catch (error) {
@@ -377,6 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
       messages.appendChild(errorMessage);
+
 
       console.error(
         'Digital Ink AI error:',
