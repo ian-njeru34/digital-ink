@@ -17,8 +17,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.querySelector('#contactForm');
   if (form) form.addEventListener('submit', (e) => {
     e.preventDefault();
+
+    const data = new FormData(form);
+    const name = data.get('name') || '';
+    const email = data.get('email') || '';
+    const company = data.get('company') || '';
+    const service = data.get('service') || '';
+    const message = data.get('message') || '';
+
+    const whatsappMessage = [
+      'Hello Digital Ink, I would like to make an enquiry.',
+      '',
+      `Name: ${name}`,
+      `Email: ${email}`,
+      `Company: ${company || 'Not provided'}`,
+      `Service: ${service}`,
+      '',
+      'Project details:',
+      message
+    ].join('\n');
+
+    const whatsappUrl = `https://wa.me/254719535117?text=${encodeURIComponent(whatsappMessage)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+
     const status = document.querySelector('#formStatus');
-    status.textContent = 'Demo mode: your form is working. Connect Supabase to store and notify on real submissions.';
+    status.textContent = 'Opening WhatsApp with your enquiry…';
     status.classList.add('show');
   });
 

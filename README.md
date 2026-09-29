@@ -59,3 +59,9 @@ The website uses published sources rather than fabricated client results:
 - W3C WCAG 2.2: current W3C Recommendation for web accessibility.
 
 These figures are contextual industry evidence, not promises about Digital Ink client results. Replace/add client case studies only when the underlying results can be verified.
+
+### WhatsApp enquiries
+The Contact page sends submitted enquiry details to Digital Ink on WhatsApp at +254 719 535 117 using a pre-filled WhatsApp message. No Supabase connection is required for this basic enquiry flow.
+### Selected Builds marquee
+The site includes an animated right-to-left portfolio stripe immediately before the footer. It uses live visual previews in iframes rather than displaying project URLs. The current preview is Inkora Ventures (`https://inkora-vert.vercel.app/`). Add additional `.work-preview` cards in the HTML when more completed sites are ready to showcase.
+
