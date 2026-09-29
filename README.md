@@ -1,29 +1,48 @@
-# Digital Ink — beginner starter
+# Digital Ink Website
 
-This is a simple, no-build website that can be hosted on Vercel from GitHub and uses Supabase for enquiry storage.
+A Vercel/GitHub-ready multi-page website for Digital Ink, an AI integration and web development company.
 
-## Files
-- `index.html` — public website
-- `style.css` — design
-- `config.js` — Supabase URL/key
-- `admin.html` — starter enquiry viewer
-- `supabase.sql` — database setup
+## Included
 
-## IMPORTANT SECURITY
-Use only the Supabase browser-safe ANON/PUBLISHABLE key in `config.js`. NEVER use a service_role/secret key.
+- Responsive homepage: **We Build Websites That Think.**
+- Services page with interactive-style service demos
+- Case Studies page with clearly marked illustrative placeholders
+- AI Lab with a working local demo generator
+- About page
+- Contact page with demo form behavior
+- Shared header/footer and responsive navigation
+- Supabase starter SQL schema
+- `.env.example` for future Supabase integration
+- `vercel.json`
 
-The included public admin page is a starter only. Before using it with real customer data, add Supabase Auth and an authenticated admin policy.
+## Deploy to GitHub + Vercel
 
-## Quick setup
-1. Create a Supabase project.
-2. Open SQL Editor and run `supabase.sql`.
-3. Copy Project URL and the browser-safe anon/publishable key.
-4. Paste them into `config.js`.
-5. Create a GitHub repository and upload all files.
-6. Import the GitHub repository into Vercel.
-7. Deploy.
-8. Open your Vercel URL and test the enquiry form.
+1. Create a new GitHub repository, for example `digital-ink-website`.
+2. Upload **all files and folders inside this ZIP** to the repository.
+3. In Vercel, choose **Add New → Project**, import the GitHub repository and deploy.
+4. No build command is required for this starter.
+5. Open your Vercel URL.
 
-## Customize
-Replace "Digital Ink" with your company name in `index.html` and `admin.html`.
-Change the prices and services in the Pricing section.
+## Supabase setup
+
+Create a Supabase project. In SQL Editor, run `supabase/schema.sql`.
+
+Then add your project values to a secure server-side integration when you are ready. Do not expose a Supabase service-role key in browser JavaScript.
+
+The static starter intentionally does not pretend to have production AI or database functionality. The AI Lab and contact form demonstrate the front-end experience. The next step is to connect them through Supabase Edge Functions / your chosen AI provider.
+
+## Replace before launch
+
+- `hello@digitalink.co.ke` with your real business email
+- Illustrative case-study metrics with verified client results
+- Team placeholder with real team photos/bios
+- Add your logo/assets in `/assets`
+- Connect a real booking calendar
+- Connect Supabase for lead storage
+- Connect your preferred AI model through a secure server-side function
+
+## Suggested production architecture
+
+Visitor → Vercel frontend → Supabase Auth / Database → Supabase Edge Function → AI provider
+
+Never place private AI API keys or Supabase service-role keys in client-side JavaScript.
