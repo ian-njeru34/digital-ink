@@ -36,7 +36,7 @@ The static starter intentionally does not pretend to have production AI or datab
 - `hello@digitalink.co.ke` with your real business email
 - Illustrative case-study metrics with verified client results
 - Team placeholder with real team photos/bios
-- Add your logo/assets in `/assets`
+- The supplied Digital Ink logo is included as `assets/digital-ink-logo.png` and `assets/favicon.png`
 - Connect a real booking calendar
 - Connect Supabase for lead storage
 - Connect your preferred AI model through a secure server-side function
