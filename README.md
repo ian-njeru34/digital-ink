@@ -63,5 +63,5 @@ These figures are contextual industry evidence, not promises about Digital Ink c
 ### WhatsApp enquiries
 The Contact page sends submitted enquiry details to Digital Ink on WhatsApp at +254 719 535 117 using a pre-filled WhatsApp message. No Supabase connection is required for this basic enquiry flow.
 ### Selected Builds marquee
-The site includes an animated right-to-left portfolio stripe immediately before the footer. It uses live visual previews in iframes rather than displaying project URLs. The current preview is Inkora Ventures (`https://inkora-vert.vercel.app/`). Add additional `.work-preview` cards in the HTML when more completed sites are ready to showcase.
+The site includes an animated right-to-left portfolio stripe immediately before the footer. It uses live visual previews in iframes rather than displaying project URLs. Each preview card is also clickable and opens the displayed project in a new browser tab. The current preview is Inkora Ventures (`https://inkora-vert.vercel.app/`). Add additional `.work-preview` cards in the HTML when more completed sites are ready to showcase.
 
