@@ -49,3 +49,340 @@
 @keyframes workMarquee{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 11px))}}
 @media(max-width:850px){.work-marquee{padding:65px 0 75px}.work-marquee-head{display:block;margin-bottom:25px}.work-marquee-head p{margin-top:16px}.work-preview{width:28.4vw}.work-preview-screen{height:auto;aspect-ratio:920/390}.work-marquee-track{animation-duration:27s}}
 @media(prefers-reduced-motion:reduce){.work-marquee-track{animation:none}.work-marquee:hover .work-marquee-track{animation:none}}
+/* =========================================
+   DIGITAL INK AI ASSISTANT
+   Additive styles — do not remove existing CSS
+========================================= */
+
+#digitalInkAssistant {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.di-assistant-window {
+  position: absolute;
+  right: 28px;
+  bottom: 28px;
+
+  width: min(390px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 56px));
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background: linear-gradient(
+    145deg,
+    rgba(20, 23, 28, 0.98),
+    rgba(9, 11, 14, 0.99)
+  );
+
+  border: 1px solid rgba(216, 255, 79, 0.25);
+  border-radius: 22px;
+
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.55),
+    0 0 60px rgba(216, 255, 79, 0.06);
+
+  pointer-events: auto;
+
+  animation: diAssistantOpen 0.28s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.di-assistant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 72px;
+  padding: 16px 18px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  background: rgba(255, 255, 255, 0.025);
+
+  backdrop-filter: blur(14px);
+}
+
+.di-assistant-header strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.di-assistant-header span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: 5px;
+
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+.di-assistant-header span::before {
+  content: "";
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #D8FF4F;
+
+  box-shadow: 0 0 12px rgba(216, 255, 79, 0.8);
+}
+
+.di-assistant-close {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.04);
+
+  color: rgba(255, 255, 255, 0.7);
+
+  font-size: 23px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background .2s ease,
+    color .2s ease,
+    transform .2s ease;
+}
+
+.di-assistant-close:hover {
+  background: rgba(216, 255, 79, 0.12);
+  color: #D8FF4F;
+  transform: rotate(90deg);
+}
+
+.di-assistant-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 22px 17px;
+  scroll-behavior: smooth;
+}
+
+.di-assistant-messages::-webkit-scrollbar {
+  width: 5px;
+}
+
+.di-assistant-messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.di-message {
+  width: fit-content;
+  max-width: 88%;
+
+  margin-bottom: 14px;
+  padding: 12px 14px;
+
+  border-radius: 15px;
+
+  font-size: 14px;
+  line-height: 1.55;
+
+  animation: diMessageIn .22s ease both;
+}
+
+.di-message p {
+  margin: 5px 0 0;
+}
+
+.di-message strong {
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  opacity: .65;
+}
+
+.di-message-ai {
+  margin-right: auto;
+
+  background: rgba(255, 255, 255, 0.055);
+
+  border: 1px solid rgba(255, 255, 255, 0.07);
+
+  color: rgba(255, 255, 255, 0.88);
+
+  border-bottom-left-radius: 5px;
+}
+
+.di-message-user {
+  margin-left: auto;
+
+  background: #D8FF4F;
+  color: #0b0d0e;
+
+  border-bottom-right-radius: 5px;
+
+  font-weight: 500;
+}
+
+.di-thinking {
+  display: inline-flex;
+  align-items: center;
+
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+}
+
+.di-thinking::after {
+  content: "...";
+
+  display: inline-block;
+
+  width: 0;
+
+  overflow: hidden;
+
+  animation: diDots 1.2s steps(4, end) infinite;
+}
+
+.di-assistant-input {
+  display: flex;
+  gap: 9px;
+
+  padding: 13px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.di-assistant-input input {
+  flex: 1;
+  min-width: 0;
+
+  height: 46px;
+
+  padding: 0 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 13px;
+
+  outline: none;
+
+  background: rgba(255, 255, 255, 0.045);
+
+  color: #ffffff;
+
+  font-family: inherit;
+  font-size: 14px;
+
+  transition:
+    border-color .2s ease,
+    background .2s ease;
+}
+
+.di-assistant-input input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.di-assistant-input input:focus {
+  border-color: rgba(216, 255, 79, 0.55);
+  background: rgba(216, 255, 79, 0.035);
+}
+
+.di-assistant-input button {
+  flex: 0 0 46px;
+
+  width: 46px;
+  height: 46px;
+
+  border: 0;
+  border-radius: 13px;
+
+  background: #D8FF4F;
+  color: #0b0d0e;
+
+  font-size: 19px;
+
+  cursor: pointer;
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease;
+}
+
+.di-assistant-input button:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 8px 25px rgba(216, 255, 79, 0.2);
+}
+
+@keyframes diAssistantOpen {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes diMessageIn {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes diDots {
+  0% {
+    width: 0;
+  }
+
+  50% {
+    width: 9px;
+  }
+
+  100% {
+    width: 18px;
+  }
+}
+
+@media (max-width: 600px) {
+  .di-assistant-window {
+    right: 10px;
+    bottom: 10px;
+
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+
+    border-radius: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .di-assistant-window,
+  .di-message {
+    animation: none;
+  }
+
+  .di-thinking::after {
+    animation: none;
+  }
+}
