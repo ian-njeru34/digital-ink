@@ -46,3 +46,16 @@ The static starter intentionally does not pretend to have production AI or datab
 Visitor → Vercel frontend → Supabase Auth / Database → Supabase Edge Function → AI provider
 
 Never place private AI API keys or Supabase service-role keys in client-side JavaScript.
+
+
+## Industry evidence
+
+The website uses published sources rather than fabricated client results:
+
+- McKinsey Global Survey on the State of AI (2025): 88% reported AI use in at least one business function; only 7% reported full organizational scaling in the cited chart.
+- McKinsey “Next best experience” (2025): analysis reports 15–20% customer-satisfaction improvement, 5–8% revenue increase and 20–30% lower cost to serve for AI-powered next-best experiences.
+- Communications Authority of Kenya: June 2025 reporting included 83.5% smartphone penetration and 58.5 million data subscriptions.
+- web.dev Core Web Vitals: good targets include LCP ≤2.5s, INP ≤200ms and CLS ≤0.1 at the 75th percentile.
+- W3C WCAG 2.2: current W3C Recommendation for web accessibility.
+
+These figures are contextual industry evidence, not promises about Digital Ink client results. Replace/add client case studies only when the underlying results can be verified.
