@@ -1,17 +1,21 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Digital Ink Admin</title><link rel="stylesheet" href="style.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
-<body><header class="nav"><a class="logo" href="index.html">Nova<span>AI</span></a><a href="index.html">← Website</a></header>
-<main class="section"><span class="eyebrow">ADMIN DASHBOARD</span><h1>Project enquiries</h1><p id="msg">Loading...</p><div id="table"></div></main>
-<script src="config.js"></script><script>
-(async()=>{
- const msg=document.getElementById('msg'), box=document.getElementById('table');
- if(window.SUPABASE_URL.includes('YOUR_')){msg.textContent='Configure config.js first.';return}
- const {createClient}=window.supabase; const db=createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
- const {data,error}=await db.from('leads').select('*').order('created_at',{ascending:false});
- if(error){msg.textContent='Could not load enquiries. Check Supabase policies.';return}
- msg.textContent=data.length+' enquiry/enquiries';
- if(!data.length){box.innerHTML='<p>No enquiries yet.</p>';return}
- box.innerHTML='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Service</th><th>Message</th><th>Date</th></tr></thead><tbody>'+data.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.email)}</td><td>${esc(x.phone||'')}</td><td>${esc(x.service||'')}</td><td>${esc(x.message)}</td><td>${new Date(x.created_at).toLocaleString()}</td></tr>`).join('')+'</tbody></table></div>';
- function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-})();
-</script></body></html>
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Digital Ink — Admin</title>
+<link rel="icon" href="assets/favicon.svg"><link rel="stylesheet" href="admin.css">
+</head><body><main class="shell">
+<section id="loginPanel" class="card login"><div class="brand"><b>DI</b><span>Digital Ink<br><small>Admin Dashboard</small></span></div>
+<p class="eyebrow">SECURE ACCESS</p><h1>Manage your leads.</h1><p class="muted">Sign in with your approved administrator account.</p>
+<form id="loginForm"><label>Email<input id="email" type="email" autocomplete="username" required></label>
+<label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+<button class="primary" type="submit">Sign in</button><div id="loginMessage" class="message"></div></form>
+<p class="security">Lead access is protected by Supabase Auth + Row Level Security.</p></section>
+
+<section id="dashboardPanel" hidden><header><div><p class="eyebrow">DIGITAL INK</p><h1>Lead Dashboard</h1><p class="muted">Capture. Qualify. Follow up. Convert.</p></div>
+<div class="actions"><span id="userEmail" class="muted"></span><button id="refreshBtn" class="secondary">Refresh</button><button id="logoutBtn" class="secondary">Log out</button></div></header>
+<div class="toolbar"><strong id="leadCount">0 leads</strong><input id="searchInput" type="search" placeholder="Search leads…"><select id="statusFilter"><option value="">All statuses</option><option>new</option><option>contacted</option><option>qualified</option><option>won</option><option>lost</option></select></div>
+<div id="dashboardMessage" class="message"></div>
+<div class="tablewrap"><table><thead><tr><th>Lead</th><th>Business</th><th>Contact</th><th>Service</th><th>Message</th><th>Status</th><th>Notes</th></tr></thead><tbody id="leadsBody"></tbody></table></div>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script><script src="admin.js"></script>
+</body></html>
