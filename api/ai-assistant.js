@@ -1,38 +1,20 @@
-const DIGITAL_INK_INSTRUCTIONS = `
-You are the Digital Ink AI Assistant.
+// api/ai-assistant.js
 
-Digital Ink is an AI and web development company.
+const OPENAI_API_URL = "https://api.openai.com/v1/responses";
+const OPENAI_MODEL = "gpt-5.6-luna";
+
+const DIGITAL_INK_INSTRUCTIONS = `
+You are Digital Ink AI, the AI assistant for Digital Ink, a Kenya-based company specializing in web development, AI integration, and business automation.
 
 Your job is to:
-1. Answer questions about Digital Ink's web development, AI and automation services.
-2. Understand what the visitor wants to build.
-3. Qualify potential clients naturally.
-4. Ask useful follow-up questions when information is missing.
-5. Collect naturally during the conversation:
-   - Name
-   - Company
-   - Email or WhatsApp number
-   - Service/project needed
-   - Budget, if they are comfortable sharing it
-   - Brief project description
-6. Keep the conversation natural and helpful.
-7. Never pressure the visitor.
-8. Do not invent clients, results, guarantees or capabilities.
-9. If the visitor wants to speak directly with the team, tell them they can contact Digital Ink on WhatsApp at +254 719 535 117.
-10. When enough information has been provided, explain that the enquiry can be passed to the Digital Ink team.
+1. Answer visitor questions clearly and naturally.
+2. Understand what the visitor's business needs.
+3. Recommend an appropriate Digital Ink service when relevant.
+4. Qualify potential clients without being pushy.
+5. Collect useful project information.
+6. Encourage the visitor to contact Digital Ink when they are ready.
 
-Digital Ink services include:
-- Custom website development
-- Business web applications
-- AI-powered chatbots and assistants
-- AI integration
-- Workflow automation
-- Predictive analytics
-- Personalization systems
-- Custom AI platforms
-- E-commerce development
-
-Current Digital Ink starting prices are:
+Digital Ink services and current prices:
 
 - Launch Website — KSh 5,000
 - Business Website — KSh 12,000
@@ -41,829 +23,610 @@ Current Digital Ink starting prices are:
 - Business Automation — From KSh 25,500
 - Custom Web Application — From KSh 51,000
 
-When discussing prices:
-- Give the relevant price when appropriate.
-- Make clear that "from" prices depend on project requirements.
-- Do not invent additional prices.
-- If a visitor needs a custom project, explain that the final price depends on scope.
+Other services may include:
+- AI chatbots
+- AI integration
+- Workflow automation
+- Predictive analytics
+- Personalization systems
+- Custom AI platforms
+- Custom web applications
 
-The tone should be:
-- Professional
-- Friendly
-- Clear
-- Concise
-- Helpful
-- Human
+Important rules:
 
-Do not ask all qualification questions at once.
+- Be helpful, professional and conversational.
+- Do not pressure visitors into buying.
+- Do not invent clients, projects, results, testimonials or guarantees.
+- Do not promise something that Digital Ink has not explicitly stated.
+- Use the prices above when discussing pricing.
+- If a service has a "From" price, make it clear that the final price depends on requirements.
+- Ask sensible follow-up questions when more information is needed.
+- Do not repeatedly ask for information the visitor has already provided.
+- If the visitor gives their name, company, project, service, email or WhatsApp number, remember it during the conversation.
+- Try to understand the visitor's project before recommending a solution.
+- Useful qualification information includes:
+  name,
+  company/business,
+  email,
+  WhatsApp/phone,
+  desired service,
+  project requirements,
+  budget,
+  timeline.
 
-Ask naturally based on the conversation.
+Digital Ink WhatsApp:
++254 719 535 117
 
-If the visitor has only asked a general question, answer it first instead of immediately trying to collect contact information.
+When appropriate, tell the visitor they can contact Digital Ink on WhatsApp.
 
-If the visitor has already provided information, do not ask for it again.
+Do not claim that you have personally contacted anyone.
+Do not claim that a human team member is currently watching the conversation unless that is actually established by the website.
 
-If the visitor wants to contact Digital Ink directly, provide:
-WhatsApp: +254 719 535 117
+Keep normal responses reasonably concise. Avoid unnecessarily long answers.
 `;
 
+// ------------------------------------------------------------
+// Utility functions
+// ------------------------------------------------------------
 
-/*
- * Clean and limit user-provided strings.
- */
 function cleanString(value, maxLength = 1000) {
-  if (typeof value !== "string") {
-    return null;
+  if (value === undefined || value === null) {
+    return "";
   }
 
-  const cleaned = value
+  return String(value)
     .replace(/\s+/g, " ")
-    .trim();
-
-  if (!cleaned) {
-    return null;
-  }
-
-  return cleaned.slice(0, maxLength);
+    .trim()
+    .slice(0, maxLength);
 }
 
+function normalizePhone(value) {
+  const phone = cleanString(value, 100);
 
-/*
- * Extract potential lead information from the visitor's
- * messages only.
- */
-function extractLeadFromText(text) {
-  const source = typeof text === "string" ? text : "";
+  if (!phone) {
+    return "";
+  }
 
-  /*
-   * Extract Visitor messages.
-   *
-   * This prevents Digital Ink AI's own responses from
-   * accidentally becoming customer information.
-   */
-  const visitorMatches = [
-    ...source.matchAll(
-      /(?:^|\n)Visitor:\s*([\s\S]*?)(?=\n(?:Digital Ink AI|Visitor):|$)/gi
-    )
-  ];
+  return phone;
+}
 
-  const visitorText =
-    visitorMatches.length > 0
-      ? visitorMatches
-          .map((match) => match[1])
-          .join("\n")
-          .trim()
-      : source;
-
-  const result = {
-    name: null,
-    company: null,
-    email: null,
-    whatsapp: null,
-    service: null,
-    budget: null,
-    project_details: null
-  };
-
-
-  /*
-   * Email
-   */
-  const emailMatch = visitorText.match(
+function extractEmail(text) {
+  const match = text.match(
     /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i
   );
 
-  if (emailMatch) {
-    result.email = cleanString(emailMatch[0], 200);
-  }
-
-
-  /*
-   * Kenyan phone / WhatsApp number.
-   */
-  const phonePatterns = [
-    /\+254[\s-]?(?:7|1)\d{2}[\s-]?\d{3}[\s-]?\d{3}/,
-    /0(?:7|1)\d{2}[\s-]?\d{3}[\s-]?\d{3}/
-  ];
-
-  for (const pattern of phonePatterns) {
-    const phoneMatch = visitorText.match(pattern);
-
-    if (phoneMatch) {
-      result.whatsapp = cleanString(phoneMatch[0], 100);
-      break;
-    }
-  }
-
-
-  /*
-   * Name.
-   *
-   * Examples:
-   * "My name is John"
-   * "I'm John"
-   * "I am John"
-   */
-  const namePatterns = [
-    /(?:my name is|i am|i'm)\s+([A-Za-z][A-Za-z .'-]{1,60}?)(?=\s+(?:and|my|from|at|with)\b|[.,!?]|$)/i
-  ];
-
-  for (const pattern of namePatterns) {
-    const match = visitorText.match(pattern);
-
-    if (match) {
-      result.name = cleanString(match[1], 100);
-      break;
-    }
-  }
-
-
-  /*
-   * Company.
-   *
-   * Examples:
-   * "My company is ABC Solutions"
-   * "I work at ABC Solutions"
-   */
-  const companyPatterns = [
-    /(?:my company is|company is|i work at|we are)\s+([A-Za-z0-9&'".,\- ]{2,100}?)(?=\s+(?:and|i|we|my|our)\b|[.!?]|$)/i
-  ];
-
-  for (const pattern of companyPatterns) {
-    const match = visitorText.match(pattern);
-
-    if (match) {
-      result.company = cleanString(match[1], 150);
-      break;
-    }
-  }
-
-
-  /*
-   * Budget.
-   */
-  const budgetPatterns = [
-    /(?:budget|budget is|budget of|spend|spending|can spend|have)\s*(?:is|of|around|about|approximately)?\s*((?:KSh|KES|ksh|kes|USD|\$|€|£)?\s?[\d,]+(?:\.\d+)?(?:\s*(?:k|m|million|thousand))?)/i
-  ];
-
-  for (const pattern of budgetPatterns) {
-    const match = visitorText.match(pattern);
-
-    if (match) {
-      result.budget = cleanString(match[1], 100);
-      break;
-    }
-  }
-
-
-  /*
-   * Service detection.
-   */
-  const serviceKeywords = [
-    {
-      keywords: [
-        "website",
-        "web site",
-        "web development",
-        "website development"
-      ],
-      value: "Website development"
-    },
-
-    {
-      keywords: [
-        "web application",
-        "web app",
-        "business application"
-      ],
-      value: "Business web application"
-    },
-
-    {
-      keywords: [
-        "chatbot",
-        "ai assistant",
-        "artificial intelligence assistant"
-      ],
-      value: "AI chatbot / assistant"
-    },
-
-    {
-      keywords: [
-        "ai integration",
-        "integrate ai"
-      ],
-      value: "AI integration"
-    },
-
-    {
-      keywords: [
-        "automation",
-        "automate",
-        "workflow"
-      ],
-      value: "Workflow automation"
-    },
-
-    {
-      keywords: [
-        "predictive analytics",
-        "analytics",
-        "prediction"
-      ],
-      value: "Predictive analytics"
-    },
-
-    {
-      keywords: [
-        "personalization",
-        "personalised",
-        "personalized"
-      ],
-      value: "Personalization system"
-    },
-
-    {
-      keywords: [
-        "custom ai",
-        "ai platform",
-        "artificial intelligence platform"
-      ],
-      value: "Custom AI platform"
-    },
-
-    {
-      keywords: [
-        "ecommerce",
-        "e-commerce",
-        "online store",
-        "online shop"
-      ],
-      value: "E-commerce"
-    }
-  ];
-
-  for (const item of serviceKeywords) {
-    const found = item.keywords.some((keyword) =>
-      visitorText
-        .toLowerCase()
-        .includes(keyword.toLowerCase())
-    );
-
-    if (found) {
-      result.service = item.value;
-      break;
-    }
-  }
-
-
-  /*
-   * Project details.
-   */
-  const usefulLines = visitorText
-    .split(/\n|(?<=[.!?])\s+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => {
-      const lower = line.toLowerCase();
-
-      const isOnlyContact =
-        /^[\s]*(?:my name is|i am|i'm)\s+[a-z .'-]+[.!?]?$/i.test(line) ||
-        /^[\s]*(?:my email is|email is)\s+/i.test(line) ||
-        /^[\s]*(?:my whatsapp is|my phone is|phone is)\s+/i.test(line);
-
-      if (isOnlyContact) {
-        return false;
-      }
-
-      return (
-        lower.includes("website") ||
-        lower.includes("web") ||
-        lower.includes("app") ||
-        lower.includes("ai") ||
-        lower.includes("chatbot") ||
-        lower.includes("automation") ||
-        lower.includes("system") ||
-        lower.includes("platform") ||
-        lower.includes("software") ||
-        lower.includes("online") ||
-        lower.includes("customer") ||
-        lower.includes("business") ||
-        lower.includes("project") ||
-        lower.includes("need") ||
-        lower.includes("want") ||
-        lower.includes("build") ||
-        lower.includes("create") ||
-        lower.includes("shop") ||
-        lower.includes("store")
-      );
-    });
-
-  if (usefulLines.length > 0) {
-    result.project_details = cleanString(
-      usefulLines.join(" "),
-      1500
-    );
-  }
-
-  return result;
+  return match ? match[0].toLowerCase() : "";
 }
 
-
-/*
- * A qualified lead needs:
- * - a name
- * - project/service information
- * - email or WhatsApp
- *
- * This matches the current leads table requirements.
- */
-function hasQualifiedLead(lead) {
-  return Boolean(
-    lead.name &&
-    (lead.service || lead.project_details) &&
-    (lead.email || lead.whatsapp)
+function extractPhone(text) {
+  const match = text.match(
+    /(?:\+?254|0)\s*\d(?:[\s-]*\d){8,11}/
   );
+
+  return match ? match[0].replace(/[^\d+]/g, "") : "";
 }
 
+function extractName(text) {
+  const patterns = [
+    /\bmy name is\s+([A-Za-z][A-Za-z .'-]{1,60})/i,
+    /\bi am\s+([A-Za-z][A-Za-z .'-]{1,60})/i,
+    /\bi'm\s+([A-Za-z][A-Za-z .'-]{1,60})/i
+  ];
 
-/*
- * Save a qualified lead into the CURRENT Digital Ink
- * public.leads table.
- *
- * IMPORTANT:
- * We intentionally do not use SELECT here.
- *
- * Your public.leads policy allows INSERT, while
- * unauthenticated users do not have SELECT access.
- */
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+
+    if (match) {
+      return cleanString(match[1], 100);
+    }
+  }
+
+  return "";
+}
+
+function extractCompany(text) {
+  const patterns = [
+    /\bmy company is\s+(.+?)(?:\.|,|$)/i,
+    /\bmy business is\s+(.+?)(?:\.|,|$)/i,
+    /\bcompany:\s*(.+?)(?:\.|,|$)/i,
+    /\bbusiness:\s*(.+?)(?:\.|,|$)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+
+    if (match) {
+      return cleanString(match[1], 150);
+    }
+  }
+
+  return "";
+}
+
+function extractBudget(text) {
+  const patterns = [
+    /\b(?:budget|budget is|my budget is)\s*(?:is|of)?\s*(?:ksh|kes|sh)?\s*([\d,]+(?:\.\d+)?)/i,
+    /\b(?:ksh|kes)\s*([\d,]+(?:\.\d+)?)/i
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+
+    if (match) {
+      return cleanString(match[1], 50);
+    }
+  }
+
+  return "";
+}
+
+function detectService(text) {
+  const lower = text.toLowerCase();
+
+  if (
+    lower.includes("e-commerce") ||
+    lower.includes("ecommerce") ||
+    lower.includes("online store") ||
+    lower.includes("online shop")
+  ) {
+    return "E-commerce";
+  }
+
+  if (
+    lower.includes("ai chatbot") ||
+    lower.includes("ai assistant") ||
+    lower.includes("chatbot") ||
+    lower.includes("ai assistant")
+  ) {
+    return "AI Business Assistant";
+  }
+
+  if (
+    lower.includes("automation") ||
+    lower.includes("automate") ||
+    lower.includes("workflow")
+  ) {
+    return "Business Automation";
+  }
+
+  if (
+    lower.includes("web application") ||
+    lower.includes("web app") ||
+    lower.includes("custom application")
+  ) {
+    return "Custom Web Application";
+  }
+
+  if (
+    lower.includes("business website") ||
+    lower.includes("company website") ||
+    lower.includes("professional website")
+  ) {
+    return "Business Website";
+  }
+
+  if (
+    lower.includes("website") ||
+    lower.includes("web site")
+  ) {
+    return "Website";
+  }
+
+  return "";
+}
+
+function extractProjectDetails(text) {
+  const lower = text.toLowerCase();
+
+  const projectIndicators = [
+    "website",
+    "web app",
+    "web application",
+    "chatbot",
+    "ai",
+    "automation",
+    "ecommerce",
+    "e-commerce",
+    "online store",
+    "online shop",
+    "platform",
+    "system",
+    "application",
+    "software"
+  ];
+
+  const containsProjectInformation = projectIndicators.some(
+    (item) => lower.includes(item)
+  );
+
+  if (!containsProjectInformation) {
+    return "";
+  }
+
+  return cleanString(text, 1200);
+}
+
+// ------------------------------------------------------------
+// Lead extraction
+// ------------------------------------------------------------
+
+function extractLeadFromText(text) {
+  const fullText = cleanString(text, 12000);
+
+  const name = extractName(fullText);
+  const company = extractCompany(fullText);
+  const email = extractEmail(fullText);
+  const phone = normalizePhone(extractPhone(fullText));
+  const budget = extractBudget(fullText);
+  const service = detectService(fullText);
+  const projectDetails = extractProjectDetails(fullText);
+
+  return {
+    name,
+    company,
+    email,
+    phone,
+    budget,
+    service,
+    project_details: projectDetails
+  };
+}
+
+function hasQualifiedLead(lead) {
+  const hasIdentity = Boolean(lead.name);
+  const hasProject = Boolean(
+    lead.service || lead.project_details
+  );
+  const hasContact = Boolean(
+    lead.email || lead.phone
+  );
+
+  return hasIdentity && hasProject && hasContact;
+}
+
+// ------------------------------------------------------------
+// Supabase
+// ------------------------------------------------------------
+
 async function saveLead(lead) {
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
       "Supabase environment variables are missing."
+    );
+
+    return false;
+  }
+
+  const messageParts = [];
+
+  if (lead.project_details) {
+    messageParts.push(
+      `Project: ${lead.project_details}`
     );
   }
 
+  if (lead.budget) {
+    messageParts.push(
+      `Budget: KSh ${lead.budget}`
+    );
+  }
 
-  /*
-   * Put budget information into the existing notes field
-   * because the current leads table does not have a
-   * separate budget column.
-   */
-  const notes = lead.budget
-    ? `Budget: ${lead.budget}`
-    : "Budget: Not provided";
+  const message =
+    messageParts.join("\n") ||
+    "Lead qualified through Digital Ink AI.";
 
-
-  /*
-   * The current leads table requires:
-   *
-   * name
-   * message
-   *
-   * Other fields are optional.
-   */
   const payload = {
     name: lead.name,
     business: lead.company || null,
     email: lead.email || null,
-    phone: lead.whatsapp || null,
-    service: lead.service || "AI Assistant enquiry",
-    message:
-      lead.project_details ||
-      "Visitor qualified through the Digital Ink AI Assistant.",
+    phone: lead.phone || null,
+    service: lead.service || null,
+    message,
     source: "AI Assistant",
     status: "new",
-    notes
+    notes: lead.budget
+      ? `Budget mentioned: KSh ${lead.budget}`
+      : null
   };
 
-
-  const response = await fetch(
-    `${supabaseUrl}/rest/v1/leads`,
-    {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-
-        /*
-         * This is the public Supabase key.
-         * It is safe to use with the INSERT RLS policy
-         * already configured for the website.
-         */
-        apikey: supabaseKey,
-
-        Authorization: `Bearer ${supabaseKey}`,
-
-        Prefer: "return=minimal"
-      },
-
-      body: JSON.stringify(payload)
-    }
-  );
-
-
-  if (!response.ok) {
-    const errorText = await response.text();
-
-    console.error(
-      "Supabase lead save failed:",
-      response.status,
-      errorText
-    );
-
-    throw new Error(
-      `Supabase returned ${response.status}`
-    );
-  }
-
-  return true;
-}
-
-
-/*
- * JSON response helper.
- */
-function jsonResponse(data, status = 200) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status,
-
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-store"
-      }
-    }
-  );
-}
-
-
-/*
- * Vercel serverless function.
- */
-export default async function handler(request) {
-
-  /*
-   * Only POST requests are accepted.
-   */
-  if (request.method !== "POST") {
-    return jsonResponse(
-      {
-        error: "Method not allowed"
-      },
-      405
-    );
-  }
-
-
   try {
-
-    /*
-     * Environment variables.
-     *
-     * OPENAI_API_KEY must remain server-side.
-     *
-     * SUPABASE_ANON_KEY is the same public key already
-     * used by your website and is protected by RLS.
-     */
-    const openaiKey =
-      process.env.OPENAI_API_KEY;
-
-    const supabaseUrl =
-      process.env.SUPABASE_URL;
-
-    const supabaseKey =
-      process.env.SUPABASE_ANON_KEY;
-
-
-    if (!openaiKey) {
-      console.error(
-        "OPENAI_API_KEY is missing."
-      );
-
-      return jsonResponse(
-        {
-          error:
-            "OpenAI API key is not configured."
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/leads`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          Prefer: "return=minimal"
         },
-        500
-      );
-    }
+        body: JSON.stringify(payload)
+      }
+    );
 
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.error(
-        "Supabase environment variables are missing."
-      );
-
-      return jsonResponse(
-        {
-          error:
-            "Supabase is not configured."
-        },
-        500
-      );
-    }
-
-
-    /*
-     * Read request body.
-     */
-    const body = await request.json();
-
-
-    const message =
-      cleanString(
-        body?.message,
-        4000
-      );
-
-
-    /*
-     * Conversation history from the website.
-     */
-    const history =
-      Array.isArray(body?.history)
-        ? body.history
-            .filter(
-              (item) =>
-                item &&
-                (
-                  item.role === "user" ||
-                  item.role === "assistant"
-                ) &&
-                typeof item.content === "string"
-            )
-            .slice(-20)
-        : [];
-
-
-    if (!message) {
-      return jsonResponse(
-        {
-          error: "Message is required."
-        },
-        400
-      );
-    }
-
-
-    /*
-     * Clean conversation history.
-     */
-    const cleanedHistory =
-      history
-        .map((item) => ({
-          role: item.role,
-          content:
-            cleanString(
-              item.content,
-              4000
-            )
-        }))
-        .filter(
-          (item) => item.content
-        );
-
-
-    /*
-     * Avoid adding the current message twice
-     * if the frontend already included it.
-     */
-    const latestHistoryItem =
-      cleanedHistory[
-        cleanedHistory.length - 1
-      ];
-
-
-    const latestAlreadyIncluded =
-      latestHistoryItem &&
-      latestHistoryItem.role === "user" &&
-      latestHistoryItem.content === message;
-
-
-    const conversation =
-      latestAlreadyIncluded
-        ? cleanedHistory
-        : [
-            ...cleanedHistory,
-            {
-              role: "user",
-              content: message
-            }
-          ];
-
-
-    /*
-     * Create transcript for lead extraction.
-     */
-    const transcript =
-      conversation
-        .map((item) => {
-
-          const speaker =
-            item.role === "user"
-              ? "Visitor"
-              : "Digital Ink AI";
-
-          return `${speaker}: ${item.content}`;
-        })
-        .join("\n");
-
-
-    /*
-     * Call OpenAI Responses API.
-     */
-    const openAIResponse =
-      await fetch(
-        "https://api.openai.com/v1/responses",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-
-            Authorization:
-              `Bearer ${openaiKey}`
-          },
-
-          body: JSON.stringify({
-            model: "gpt-5.6-luna",
-
-            instructions:
-              DIGITAL_INK_INSTRUCTIONS,
-
-            input: conversation,
-
-            max_output_tokens: 500
-          })
-        }
-      );
-
-
-    if (!openAIResponse.ok) {
-
-      const errorText =
-        await openAIResponse.text();
+    if (!response.ok) {
+      const errorText = await response.text();
 
       console.error(
-        "OpenAI API error:",
-        openAIResponse.status,
+        "Supabase lead save failed:",
+        response.status,
         errorText
       );
 
-      return jsonResponse(
-        {
-          error:
-            "OpenAI request failed."
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(
+      "Supabase lead save error:",
+      error
+    );
+
+    return false;
+  }
+}
+
+// ------------------------------------------------------------
+// JSON response helper
+// ------------------------------------------------------------
+
+function jsonResponse(res, statusCode, data) {
+  res.status(statusCode);
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "no-store");
+
+  return res.json(data);
+}
+
+// ------------------------------------------------------------
+// OpenAI request with timeout
+// ------------------------------------------------------------
+
+async function callOpenAI(message, history) {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "OPENAI_API_KEY is missing."
+    );
+  }
+
+  const controller = new AbortController();
+
+  // Prevent another 300-second Vercel timeout.
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 30000);
+
+  try {
+    const safeHistory = Array.isArray(history)
+      ? history
+          .slice(-10)
+          .filter(
+            (item) =>
+              item &&
+              typeof item === "object" &&
+              (item.role === "user" ||
+                item.role === "assistant")
+          )
+          .map((item) => ({
+            role: item.role,
+            content: cleanString(
+              item.content || item.text || "",
+              2000
+            )
+          }))
+          .filter((item) => item.content)
+      : [];
+
+    const input = [
+      ...safeHistory,
+      {
+        role: "user",
+        content: cleanString(message, 4000)
+      }
+    ];
+
+    const response = await fetch(
+      OPENAI_API_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`
         },
-        502
+        body: JSON.stringify({
+          model: OPENAI_MODEL,
+          instructions:
+            DIGITAL_INK_INSTRUCTIONS,
+          input,
+          max_output_tokens: 350
+        }),
+        signal: controller.signal
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      console.error(
+        "OpenAI API error:",
+        response.status,
+        errorText
+      );
+
+      throw new Error(
+        `OpenAI API returned ${response.status}`
       );
     }
 
+    const data = await response.json();
 
-    const openAIData =
-      await openAIResponse.json();
+    let outputText = "";
 
-
-    /*
-     * Responses API normally provides output_text.
-     */
-    let reply =
-      typeof openAIData.output_text === "string"
-        ? openAIData.output_text.trim()
-        : "";
-
-
-    /*
-     * Fallback extraction if output_text
-     * is not available.
-     */
     if (
-      !reply &&
-      Array.isArray(openAIData.output)
+      typeof data.output_text === "string"
     ) {
+      outputText = data.output_text;
+    }
 
-      for (
-        const outputItem
-        of openAIData.output
-      ) {
-
+    if (
+      !outputText &&
+      Array.isArray(data.output)
+    ) {
+      for (const item of data.output) {
         if (
-          outputItem &&
-          Array.isArray(
-            outputItem.content
-          )
+          Array.isArray(item.content)
         ) {
-
-          for (
-            const contentItem
-            of outputItem.content
-          ) {
-
+          for (const content of item.content) {
             if (
-              contentItem &&
-              typeof contentItem.text === "string"
+              typeof content.text === "string"
             ) {
-
-              reply +=
-                contentItem.text;
+              outputText += content.text;
             }
           }
         }
       }
-
-      reply = reply.trim();
     }
 
+    outputText = cleanString(
+      outputText,
+      4000
+    );
 
-    if (!reply) {
-
-      console.error(
-        "OpenAI returned no assistant text:",
-        JSON.stringify(openAIData)
-      );
-
-      return jsonResponse(
-        {
-          error:
-            "The AI did not return a response."
-        },
-        502
+    if (!outputText) {
+      throw new Error(
+        "OpenAI returned an empty response."
       );
     }
 
+    return outputText;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
-    /*
-     * Extract lead information from the
-     * visitor conversation.
-     */
+// ------------------------------------------------------------
+// Vercel serverless function
+// ------------------------------------------------------------
+
+export default async function handler(
+  req,
+  res
+) {
+  // Only allow POST requests.
+  if (req.method !== "POST") {
+    return jsonResponse(res, 405, {
+      error: "Method not allowed."
+    });
+  }
+
+  try {
+    // IMPORTANT:
+    // Vercel's Node.js serverless runtime provides
+    // req.body. It does NOT provide request.json().
+    const body = req.body || {};
+
+    const message = cleanString(
+      body.message,
+      4000
+    );
+
+    const history = Array.isArray(
+      body.history
+    )
+      ? body.history
+      : [];
+
+    if (!message) {
+      return jsonResponse(res, 400, {
+        error: "Message is required."
+      });
+    }
+
+    // --------------------------------------------------------
+    // Generate AI response
+    // --------------------------------------------------------
+
+    const reply = await callOpenAI(
+      message,
+      history
+    );
+
+    // --------------------------------------------------------
+    // Extract possible lead information
+    //
+    // We inspect the current message plus recent history.
+    // This avoids another OpenAI API call and keeps the
+    // response faster.
+    // --------------------------------------------------------
+
+    const recentConversation = [
+      ...history
+        .slice(-10)
+        .map((item) => {
+          if (!item) return "";
+
+          return cleanString(
+            item.content ||
+              item.text ||
+              "",
+            2000
+          );
+        }),
+      message
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     const lead =
       extractLeadFromText(
-        transcript
+        recentConversation
       );
-
-
-    /*
-     * Save only when enough information
-     * has been collected.
-     */
-    const qualified =
-      hasQualifiedLead(lead);
-
 
     let leadSaved = false;
 
+    // --------------------------------------------------------
+    // Save only a sufficiently qualified lead.
+    // --------------------------------------------------------
 
-    if (qualified) {
-
-      try {
-
-        leadSaved =
-          await saveLead(lead);
-
-      } catch (leadError) {
-
-        console.error(
-          "Lead save error:",
-          leadError
-        );
-
-        /*
-         * Do not interrupt the AI conversation
-         * simply because lead storage failed.
-         */
-        leadSaved = false;
-      }
+    if (hasQualifiedLead(lead)) {
+      leadSaved = await saveLead(lead);
     }
 
-
-    /*
-     * Return response to the website.
-     */
-    return jsonResponse({
+    return jsonResponse(res, 200, {
       reply,
       leadSaved
     });
-
-
   } catch (error) {
-
     console.error(
       "AI Assistant server error:",
       error
     );
 
-    return jsonResponse(
-      {
+    // Give the browser a useful response rather than
+    // allowing the function to hang until Vercel's timeout.
+    if (
+      error &&
+      error.name === "AbortError"
+    ) {
+      return jsonResponse(res, 504, {
         error:
-          "I'm having trouble connecting right now. Please try again or contact Digital Ink on WhatsApp."
-      },
-      500
-    );
+          "The AI service took too long to respond.",
+        reply:
+          "I'm sorry, the AI service is taking longer than expected. Please try again, or contact Digital Ink on WhatsApp at +254 719 535 117."
+      });
+    }
+
+    return jsonResponse(res, 500, {
+      error:
+        "AI Assistant server error.",
+      reply:
+        "I'm having trouble connecting right now. Please try again in a moment, or contact Digital Ink on WhatsApp at +254 719 535 117."
+    });
   }
 }
